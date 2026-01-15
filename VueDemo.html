@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>我的第一个 Vue 应用</title>
+    <!-- 引入 Vue3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  </head>
+  <body>
+    <!-- Vue 应用将挂载到这个 div -->
+    <div id="app"></div>
+    <script>
+      // 使用 Vue3 的组合式 API
+      const { createApp, ref } = Vue;
+
+      createApp({
+        setup() {
+          // 创建响应式状态
+          const message = ref("你好，Vue3！");
+          console.log(message);
+
+          //   message = "aa";
+          // 返回需要在模板中使用的内容
+          return {
+            message,
+          };
+        },
+        template: `<h1>{{ message }}</h1>`,
+      }).mount("#app");
+    </script>
+  </body>
+</html>
