@@ -301,22 +301,26 @@ const checkGameOver = () => {
 // 处理键盘事件
 const handleKeyDown = (e: KeyboardEvent) => {
   // 阻止方向键的默认行为（如页面滚动）
-  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "w", "a", "s", "d"].includes(e.key)) {
     e.preventDefault();
   }
 
   // 根据按键调用对应的移动方法
   switch (e.key) {
     case "ArrowUp":
+    case "w":
       move("up");
       break;
     case "ArrowDown":
+    case "s":
       move("down");
       break;
     case "ArrowLeft":
+    case "a":
       move("left");
       break;
     case "ArrowRight":
+    case "d":
       move("right");
       break;
   }
@@ -456,7 +460,7 @@ const getTextColor = (value: number) => {
     <!-- 游戏信息区域 -->
     <div class="info">
       <!-- 游戏说明 -->
-      <p>使用方向键移动方块，合并相同数字达到 <strong>2048</strong>！</p>
+      <p>使用方向键或WASD移动方块，合并相同数字达到 <strong>2048</strong>！</p>
       <!-- 重新开始按钮 -->
       <button @click="restart" class="restart-btn">新游戏</button>
     </div>
