@@ -2,9 +2,9 @@
 
 A modern implementation of the classic 2048 game built with Vue 3, TypeScript, and Vite.
 
-[![CI/CD Pipeline](https://github.com/your-username/vue2048/workflows/CI/CD%20Pipeline/badge.svg)](https://github.com/your-username/vue2048/actions)
-[![Deploy to GitHub Pages](https://github.com/your-username/vue2048/actions/workflows/deploy.yml/badge.svg)](https://github.com/your-username/vue2048/actions/workflows/deploy.yml)
-[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://your-username.github.io/vue2048)
+[![CI/CD Pipeline](https://github.com/liugucheng/vue2048/workflows/CI/CD%20Pipeline/badge.svg)](https://github.com/liugucheng/vue2048/actions)
+[![Deploy to GitHub Pages](https://github.com/liugucheng/vue2048/actions/workflows/deploy.yml/badge.svg)](https://github.com/liugucheng/vue2048/actions/workflows/deploy.yml)
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://liugucheng.github.io/vue2048)
 
 ## 🎮 Game Introduction
 
@@ -50,7 +50,7 @@ This project includes automated deployment to GitHub Pages using GitHub Actions.
 3. **Push to Main Branch**
    - The deployment will automatically trigger on every push to the `master` or `main` branch
 4. **Access Your Site**
-   - Your site will be available at: `https://your-username.github.io/vue2048`
+   - Your site will be available at: `https://liugucheng.github.io/vue2048`
 
 #### Custom Domain (Optional)
 
