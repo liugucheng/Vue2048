@@ -1,302 +1,16 @@
 <script setup lang="ts">
 // 导入Vue的响应式API和生命周期钩子
-import { ref, onMounted, onUnmounted } from "vue";
+import { onMounted, onUnmounted } from "vue";
+import { useGameStore } from "../stores/gameStore";
 
-// 定义游戏方块的接口类型
-interface Cell {
-  value: number; // 方块的值
-  id: number; // 方块的唯一标识符
-  merged?: boolean; // 是否是合并后的方块（可选）
-}
-
-// 游戏状态管理
-const board = ref<(Cell | null)[][]>([]); // 游戏棋盘，4x4网格
-const score = ref(0); // 当前分数
-const bestScore = ref(0); // 历史最高分
-const gameOver = ref(false); // 游戏是否结束
-const gameWon = ref(false); // 是否达到2048获胜
-let nextId = 0; // 用于生成方块唯一ID的计数器
+// 使用游戏store
+const gameStore = useGameStore();
 
 // 触摸事件相关变量
 let touchStartX = 0; // 触摸开始时的X坐标
 let touchStartY = 0; // 触摸开始时的Y坐标
 let touchEndX = 0; // 触摸结束时的X坐标
 let touchEndY = 0; // 触摸结束时的Y坐标
-
-// 初始化游戏棋盘
-const initBoard = () => {
-  // 创建4x4的空棋盘
-  board.value = Array(4)
-    .fill(null)
-    .map(() => Array(4).fill(null));
-  // 重置分数为0
-  score.value = 0;
-  // 重置游戏状态
-  gameOver.value = false;
-  gameWon.value = false;
-  // 添加两个初始方块
-  addNewTile();
-  addNewTile();
-};
-
-// 在棋盘上随机位置添加新方块
-const addNewTile = () => {
-  // 收集所有空单元格的位置
-  const emptyCells: { row: number; col: number }[] = [];
-
-  // 遍历棋盘，找到所有空单元格
-  for (let i = 0; i < 4; i++) {
-    for (let j = 0; j < 4; j++) {
-      if (!board.value[i][j]) {
-        emptyCells.push({ row: i, col: j });
-      }
-    }
-  }
-
-  // 如果有空单元格，则随机选择一个位置添加新方块
-  if (emptyCells.length > 0) {
-    // 随机选择一个空单元格
-    const { row, col } =
-      emptyCells[Math.floor(Math.random() * emptyCells.length)];
-    // 在选中位置添加新方块，90%概率是2，10%概率是4
-    board.value[row][col] = {
-      value: Math.random() < 0.9 ? 2 : 4,
-      id: nextId++, // 分配唯一ID并自增
-    };
-  }
-};
-
-// 处理方块移动逻辑
-const move = (direction: "up" | "down" | "left" | "right") => {
-  // 如果游戏结束或已获胜，则不处理移动
-  if (gameOver.value || gameWon.value) return;
-
-  // 标记是否有方块移动
-  let moved = false;
-  // 创建新棋盘用于计算移动后的状态
-  const newBoard: (Cell | null)[][] = Array(4)
-    .fill(null)
-    .map(() => Array(4).fill(null));
-
-  // 重置所有方块的merged状态
-  for (let i = 0; i < 4; i++) {
-    for (let j = 0; j < 4; j++) {
-      if (board.value[i][j]) {
-        board.value[i][j]!.merged = false;
-      }
-    }
-  }
-
-  // 处理向左移动
-  if (direction === "left") {
-    // 遍历每一行
-    for (let i = 0; i < 4; i++) {
-      // pos表示当前行中空位的位置
-      let pos = 0;
-      // 从左到右遍历每一列
-      for (let j = 0; j < 4; j++) {
-        // 如果当前位置有方块
-        if (board.value[i][j]) {
-          const cell = board.value[i][j]!;
-          // 如果左边有方块且值相同且未合并过
-          if (
-            pos > 0 &&
-            newBoard[i][pos - 1] &&
-            newBoard[i][pos - 1]!.value === cell.value &&
-            !newBoard[i][pos - 1]!.merged
-          ) {
-            // 合并方块
-            newBoard[i][pos - 1]!.value *= 2;
-            // 标记为已合并
-            newBoard[i][pos - 1]!.merged = true;
-            // 更新分数
-            score.value += newBoard[i][pos - 1]!.value;
-
-            // 如果合并后达到2048，标记获胜
-            if (newBoard[i][pos - 1]!.value === 2048) {
-              gameWon.value = true;
-            }
-            // 标记有方块移动
-            moved = true;
-          } else {
-            // 方块不能合并，直接移动到目标位置
-            newBoard[i][pos] = { ...cell };
-            // 如果位置有变化，标记移动
-            if (pos !== j) moved = true;
-            // 移动空位指示器
-            pos++;
-          }
-        }
-      }
-    }
-  }
-  // 处理向右移动
-  else if (direction === "right") {
-    // 遍历每一行
-    for (let i = 0; i < 4; i++) {
-      // pos表示当前行中空位的位置（从右开始）
-      let pos = 3;
-      // 从右到左遍历每一列
-      for (let j = 3; j >= 0; j--) {
-        // 如果当前位置有方块
-        if (board.value[i][j]) {
-          const cell = board.value[i][j]!;
-          // 如果右边有方块且值相同且未合并过
-          if (
-            pos < 3 &&
-            newBoard[i][pos + 1] &&
-            newBoard[i][pos + 1]!.value === cell.value &&
-            !newBoard[i][pos + 1]!.merged
-          ) {
-            // 合并方块
-            newBoard[i][pos + 1]!.value *= 2;
-            // 标记为已合并
-            newBoard[i][pos + 1]!.merged = true;
-            // 更新分数
-            score.value += newBoard[i][pos + 1]!.value;
-
-            // 如果合并后达到2048，标记获胜
-            if (newBoard[i][pos + 1]!.value === 2048) {
-              gameWon.value = true;
-            }
-            // 标记有方块移动
-            moved = true;
-          } else {
-            // 方块不能合并，直接移动到目标位置
-            newBoard[i][pos] = { ...cell };
-            // 如果位置有变化，标记移动
-            if (pos !== j) moved = true;
-            // 移动空位指示器
-            pos--;
-          }
-        }
-      }
-    }
-  }
-  // 处理向上移动
-  else if (direction === "up") {
-    // 遍历每一列
-    for (let j = 0; j < 4; j++) {
-      // pos表示当前列中空位的位置
-      let pos = 0;
-      // 从上到下遍历每一行
-      for (let i = 0; i < 4; i++) {
-        // 如果当前位置有方块
-        if (board.value[i][j]) {
-          const cell = board.value[i][j]!;
-          // 如果上方有方块且值相同且未合并过
-          if (
-            pos > 0 &&
-            newBoard[pos - 1][j] &&
-            newBoard[pos - 1][j]!.value === cell.value &&
-            !newBoard[pos - 1][j]!.merged
-          ) {
-            // 合并方块
-            newBoard[pos - 1][j]!.value *= 2;
-            // 标记为已合并
-            newBoard[pos - 1][j]!.merged = true;
-            // 更新分数
-            score.value += newBoard[pos - 1][j]!.value;
-
-            // 如果合并后达到2048，标记获胜
-            if (newBoard[pos - 1][j]!.value === 2048) {
-              gameWon.value = true;
-            }
-            // 标记有方块移动
-            moved = true;
-          } else {
-            // 方块不能合并，直接移动到目标位置
-            newBoard[pos][j] = { ...cell };
-            // 如果位置有变化，标记移动
-            if (pos !== i) moved = true;
-            // 移动空位指示器
-            pos++;
-          }
-        }
-      }
-    }
-  }
-  // 处理向下移动
-  else if (direction === "down") {
-    // 遍历每一列
-    for (let j = 0; j < 4; j++) {
-      // pos表示当前列中空位的位置（从下开始）
-      let pos = 3;
-      // 从下到上遍历每一行
-      for (let i = 3; i >= 0; i--) {
-        // 如果当前位置有方块
-        if (board.value[i][j]) {
-          const cell = board.value[i][j]!;
-          // 如果下方有方块且值相同且未合并过
-          if (
-            pos < 3 &&
-            newBoard[pos + 1][j] &&
-            newBoard[pos + 1][j]!.value === cell.value &&
-            !newBoard[pos + 1][j]!.merged
-          ) {
-            // 合并方块
-            newBoard[pos + 1][j]!.value *= 2;
-            // 标记为已合并
-            newBoard[pos + 1][j]!.merged = true;
-            // 更新分数
-            score.value += newBoard[pos + 1][j]!.value;
-
-            // 如果合并后达到2048，标记获胜
-            if (newBoard[pos + 1][j]!.value === 2048) {
-              gameWon.value = true;
-            }
-            // 标记有方块移动
-            moved = true;
-          } else {
-            // 方块不能合并，直接移动到目标位置
-            newBoard[pos][j] = { ...cell };
-            // 如果位置有变化，标记移动
-            if (pos !== i) moved = true;
-            // 移动空位指示器
-            pos--;
-          }
-        }
-      }
-    }
-  }
-
-  // 如果有方块移动
-  if (moved) {
-    // 更新棋盘
-    board.value = newBoard;
-    // 添加新方块
-    addNewTile();
-    // 检查游戏是否结束
-    checkGameOver();
-
-    // 如果当前分数超过历史最高分，更新最高分
-    if (score.value > bestScore.value) {
-      bestScore.value = score.value;
-      // 保存最高分到本地存储
-      localStorage.setItem("bestScore2048", bestScore.value.toString());
-    }
-  }
-};
-
-// 检查游戏是否结束
-const checkGameOver = () => {
-  // 遍历棋盘
-  for (let i = 0; i < 4; i++) {
-    for (let j = 0; j < 4; j++) {
-      // 如果有空格，游戏未结束
-      if (!board.value[i][j]) return;
-
-      // 如果相邻有相同值的方块，游戏未结束
-      if (j < 3 && board.value[i][j]!.value === board.value[i][j + 1]?.value)
-        return;
-      if (i < 3 && board.value[i][j]!.value === board.value[i + 1][j]?.value)
-        return;
-    }
-  }
-
-  // 没有空格且没有可合并的方块，游戏结束
-  gameOver.value = true;
-};
 
 // 处理键盘事件
 const handleKeyDown = (e: KeyboardEvent) => {
@@ -309,19 +23,19 @@ const handleKeyDown = (e: KeyboardEvent) => {
   switch (e.key) {
     case "ArrowUp":
     case "w":
-      move("up");
+      gameStore.moveUp();
       break;
     case "ArrowDown":
     case "s":
-      move("down");
+      gameStore.moveDown();
       break;
     case "ArrowLeft":
     case "a":
-      move("left");
+      gameStore.moveLeft();
       break;
     case "ArrowRight":
     case "d":
-      move("right");
+      gameStore.moveRight();
       break;
   }
 };
@@ -345,7 +59,7 @@ const handleTouchEnd = (e: TouchEvent) => {
 // 处理滑动手势
 const handleSwipe = () => {
   // 如果游戏结束或已获胜，则不处理滑动
-  if (gameOver.value || gameWon.value) return;
+  if (gameStore.isGameOver || gameStore.isGameWon) return;
 
   // 计算水平和垂直方向的滑动距离
   const deltaX = touchEndX - touchStartX;
@@ -363,16 +77,16 @@ const handleSwipe = () => {
     if (absDeltaX > absDeltaY) {
       // 水平滑动
       if (deltaX > 0) {
-        move("right");
+        gameStore.moveRight();
       } else {
-        move("left");
+        gameStore.moveLeft();
       }
     } else {
       // 垂直滑动
       if (deltaY > 0) {
-        move("down");
+        gameStore.moveDown();
       } else {
-        move("up");
+        gameStore.moveUp();
       }
     }
   }
@@ -380,18 +94,16 @@ const handleSwipe = () => {
 
 // 重新开始游戏
 const restart = () => {
-  initBoard();
+  gameStore.restartGame();
+};
+
+// 继续游戏（当获胜时）
+const continueGame = () => {
+  gameStore.continueGame();
 };
 
 // 组件挂载时执行
 onMounted(() => {
-  // 从本地存储获取历史最高分
-  const saved = localStorage.getItem("bestScore2048");
-  if (saved) {
-    bestScore.value = parseInt(saved);
-  }
-  // 初始化棋盘
-  initBoard();
   // 添加键盘事件监听
   window.addEventListener("keydown", handleKeyDown);
   // 添加触摸事件监听
@@ -438,25 +150,6 @@ const getTextColor = (value: number) => {
 <template>
   <!-- 游戏容器 -->
   <div class="game-container">
-    <!-- 游戏头部 -->
-    <div class="header">
-      <!-- 游戏标题 -->
-      <h1 class="title">2048</h1>
-      <!-- 分数显示区域 -->
-      <div class="scores">
-        <!-- 当前分数 -->
-        <div class="score-box">
-          <div class="label">分数</div>
-          <div class="value">{{ score }}</div>
-        </div>
-        <!-- 历史最高分 -->
-        <div class="score-box">
-          <div class="label">最高</div>
-          <div class="value">{{ bestScore }}</div>
-        </div>
-      </div>
-    </div>
-
     <!-- 游戏信息区域 -->
     <div class="info">
       <!-- 游戏说明 -->
@@ -468,7 +161,7 @@ const getTextColor = (value: number) => {
     <!-- 游戏棋盘 -->
     <div class="board">
       <!-- 遍历棋盘的每一行 -->
-      <div v-for="(row, i) in board" :key="i" class="row">
+      <div v-for="(row, i) in gameStore.board" :key="i" class="row">
         <!-- 遍历行中的每个单元格 -->
         <div v-for="(cell, j) in row" :key="j" class="cell" :class="{ 'has-value': cell }" :style="{
           backgroundColor: cell ? getCellColor(cell.value) : '#cdc1b4',
@@ -481,20 +174,20 @@ const getTextColor = (value: number) => {
     </div>
 
     <!-- 游戏结束遮罩层 -->
-    <div v-if="gameOver" class="overlay">
+    <div v-if="gameStore.isGameOver" class="overlay">
       <div class="message">
         <h2>游戏结束！</h2>
-        <p>最终分数：{{ score }}</p>
+        <p>最终分数：{{ gameStore.currentScore }}</p>
         <button @click="restart" class="restart-btn">再来一局</button>
       </div>
     </div>
 
     <!-- 游戏获胜遮罩层 -->
-    <div v-if="gameWon && !gameOver" class="overlay">
+    <div v-if="gameStore.isGameWon && !gameStore.isGameOver" class="overlay">
       <div class="message">
         <h2>恭喜你赢了！</h2>
         <p>你达到了 2048！</p>
-        <button @click="gameWon = false" class="continue-btn">继续游戏</button>
+        <button @click="continueGame" class="continue-btn">继续游戏</button>
         <button @click="restart" class="restart-btn">新游戏</button>
       </div>
     </div>
@@ -503,254 +196,293 @@ const getTextColor = (value: number) => {
 
 <style scoped>
 .game-container {
+  width: 100%;
   max-width: 500px;
   margin: 0 auto;
-  padding: 20px;
-  font-family: "Arial", sans-serif;
+  padding: var(--space-lg);
+  font-family: var(--font-family);
 }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.title {
-  font-size: 80px;
-  font-weight: bold;
-  color: #776e65;
-  margin: 0;
-}
-
-.scores {
-  display: flex;
-  gap: 10px;
-}
-
-.score-box {
-  background: #bbada0;
-  padding: 10px 20px;
-  border-radius: 3px;
-  text-align: center;
-  min-width: 80px;
-}
-
-.label {
-  color: #eee4da;
-  font-size: 13px;
-  text-transform: uppercase;
-  font-weight: bold;
-}
-
-.value {
-  color: white;
-  font-size: 25px;
-  font-weight: bold;
-}
-
+/* 游戏说明区域 */
 .info {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  color: #776e65;
+  margin-bottom: var(--space-lg);
+  color: var(--text-secondary);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(249, 246, 242, 0.8) 100%);
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .info p {
   margin: 0;
   flex: 1;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
 }
 
 .restart-btn,
 .continue-btn {
-  background: #8f7a66;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 3px;
-  font-size: 16px;
-  font-weight: bold;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  color: var(--text-light);
+  border: 2px solid transparent;
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.restart-btn::before,
+.continue-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.restart-btn:hover::before,
+.continue-btn:hover::before {
+  left: 100%;
 }
 
 .restart-btn:hover,
 .continue-btn:hover {
-  background: #9f8a76;
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary-dark) 100%);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .continue-btn {
-  background: #edcf72;
-  color: #776e65;
-  margin-right: 10px;
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-light) 100%);
+  color: var(--color-primary);
+  margin-right: var(--space-md);
+  border: 2px solid var(--color-accent);
 }
 
 .continue-btn:hover {
-  background: #edd472;
+  background: linear-gradient(135deg, var(--color-accent-light) 0%, var(--color-accent) 100%);
+  color: var(--text-light);
 }
 
+/* 游戏棋盘 */
 .board {
-  background: #bbada0;
-  border-radius: 6px;
-  padding: 15px;
+  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secondary-light) 100%);
+  border-radius: var(--radius-xl);
+  padding: var(--space-lg);
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: var(--space-md);
   position: relative;
+  box-shadow: var(--shadow-lg);
+  border: 4px solid rgba(255, 255, 255, 0.3);
 }
 
 .row {
   display: flex;
-  gap: 15px;
+  gap: var(--space-md);
 }
 
 .cell {
   width: 100px;
   height: 100px;
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 35px;
-  font-weight: bold;
-  transition: all 0.15s ease-in-out;
+  font-weight: var(--font-weight-bold);
+  transition: all var(--transition-normal);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.cell::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 .cell.has-value {
-  animation: appear 0.2s;
+  animation: appear 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.3);
 }
 
 @keyframes appear {
   0% {
-    transform: scale(0);
+    transform: scale(0) rotate(180deg);
+    opacity: 0;
   }
-
+  50% {
+    transform: scale(1.2) rotate(90deg);
+    opacity: 0.8;
+  }
   100% {
-    transform: scale(1);
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
   }
 }
 
+/* 遮罩层 */
 .overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(238, 228, 218, 0.5);
+  background: rgba(238, 228, 218, 0.8);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .message {
-  background: white;
-  padding: 40px;
-  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(249, 246, 242, 0.95) 100%);
+  padding: var(--space-2xl);
+  border-radius: var(--radius-xl);
   text-align: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-xl);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+  max-width: 400px;
+  width: 90%;
+  animation: slideIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-50px) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
 }
 
 .message h2 {
-  color: #776e65;
-  margin: 0 0 10px 0;
-  font-size: 40px;
+  color: var(--color-primary);
+  margin: 0 0 var(--space-md) 0;
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
 }
 
 .message p {
-  color: #776e65;
-  margin: 0 0 20px 0;
-  font-size: 18px;
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-xl) 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
 }
 
+/* 响应式设计 */
 @media (max-width: 600px) {
   .game-container {
-    max-width: 100%;
-    padding: 10px;
-  }
-
-  .title {
-    font-size: 50px;
+    padding: var(--space-md);
   }
 
   .cell {
-    width: 60px;
-    height: 60px;
-    font-size: 24px;
+    width: calc((100vw - 120px) / 4);
+    height: calc((100vw - 120px) / 4);
+    font-size: clamp(20px, 8vw, 28px);
+    min-width: 60px;
+    min-height: 60px;
   }
 
   .board {
-    padding: 10px;
-    gap: 10px;
+    padding: var(--space-md);
+    gap: var(--space-sm);
   }
 
   .row {
-    gap: 10px;
+    gap: var(--space-sm);
   }
 
   .info {
     flex-direction: column;
-    gap: 10px;
+    gap: var(--space-md);
+    text-align: center;
   }
 
   .info p {
-    text-align: center;
-    font-size: 16px;
+    font-size: var(--font-size-sm);
   }
 
   .restart-btn,
   .continue-btn {
-    padding: 12px 24px;
-    font-size: 18px;
+    padding: var(--space-md) var(--space-xl);
+    font-size: var(--font-size-base);
     width: 100%;
+    max-width: 200px;
   }
 
   .continue-btn {
     margin-right: 0;
-    margin-bottom: 10px;
+    margin-bottom: var(--space-md);
   }
 
   .message {
-    padding: 30px 20px;
+    padding: var(--space-xl) var(--space-lg);
   }
 
   .message h2 {
-    font-size: 30px;
+    font-size: var(--font-size-2xl);
   }
 
   .message p {
-    font-size: 16px;
+    font-size: var(--font-size-base);
   }
 }
 
 @media (max-width: 400px) {
-  .title {
-    font-size: 40px;
+  .game-container {
+    padding: var(--space-sm);
   }
 
   .cell {
-    width: 50px;
-    height: 50px;
-    font-size: 20px;
+    width: calc((100vw - 80px) / 4);
+    height: calc((100vw - 80px) / 4);
+    font-size: clamp(16px, 7vw, 24px);
+    min-width: 50px;
+    min-height: 50px;
   }
 
   .board {
-    padding: 8px;
-    gap: 8px;
+    padding: var(--space-sm);
+    gap: var(--space-xs);
   }
 
   .row {
-    gap: 8px;
-  }
-
-  .score-box {
-    min-width: 70px;
-    padding: 8px 16px;
-  }
-
-  .value {
-    font-size: 20px;
+    gap: var(--space-xs);
   }
 }
 </style>

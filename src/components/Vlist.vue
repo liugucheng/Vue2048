@@ -1,89 +1,55 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import type { GameRecord } from "../stores/gameStore";
 
-// 生成100条模拟数据
-const generateUsers = () => {
-  const names = ["张三", "李四", "王五", "赵六", "钱七", "孙八", "周九", "吴十", "郑十一", "王十二"];
-  const occupations = ["开发工程师", "产品经理", "设计师", "数据分析师", "市场专员", "测试工程师", "运维工程师", "项目经理", "UI设计师", "前端工程师"];
+interface Props {
+  items: GameRecord[]
+  itemHeight?: number
+  containerHeight?: number
+}
 
-  return Array.from({ length: 1000 }, (_, index) => ({
-    id: index + 1,
-    name: names[index % names.length] + (Math.floor(index / names.length) + 1),
-    age: Math.floor(Math.random() * 20) + 20, // 20-40岁
-    occupation: occupations[index % occupations.length]
-  }));
-};
-
-const users = ref(generateUsers());
-
-const sortBy = ref("id");
-const sortDirection = ref("asc"); // 'asc' 或 'desc'
+const props = withDefaults(defineProps<Props>(), {
+  itemHeight: 60,
+  containerHeight: 500
+});
 
 // 虚拟列表相关状态
-const containerRef = ref(null);
-const visibleRange = ref({ start: 0, end: 20 });
-const itemHeight = 50; // 每行高度
-const containerHeight = 400; // 容器高度
+const containerRef = ref<HTMLElement | null>(null);
+const visibleRange = ref({ start: 0, end: 10 });
 const bufferSize = 5; // 缓冲区大小
-
-// 排序后的用户列表
-const sortedUsers = computed(() => {
-  const direction = sortDirection.value === "asc" ? 1 : -1;
-
-  return [...users.value].sort((a, b) => {
-    if (a[sortBy.value] < b[sortBy.value]) return -1 * direction;
-    if (a[sortBy.value] > b[sortBy.value]) return 1 * direction;
-    return 0;
-  });
-});
 
 // 可见的行数据
 const visibleItems = computed(() => {
   const { start, end } = visibleRange.value;
-  return sortedUsers.value.slice(start, end + bufferSize);
+  return props.items.slice(start, end + bufferSize);
 });
 
 // 容器总高度
-const totalHeight = computed(() => sortedUsers.value.length * itemHeight);
+const totalHeight = computed(() => props.items.length * props.itemHeight);
 
 // 偏移量
-const offsetY = computed(() => visibleRange.value.start * itemHeight);
+const offsetY = computed(() => visibleRange.value.start * props.itemHeight);
 
 // 滚动处理
 function handleScroll() {
   if (!containerRef.value) return;
 
   const scrollTop = containerRef.value.scrollTop;
-  const start = Math.floor(scrollTop / itemHeight);
+  const start = Math.floor(scrollTop / props.itemHeight);
   const end = Math.min(
-    start + Math.ceil(containerHeight / itemHeight) + bufferSize,
-    sortedUsers.value.length
+    start + Math.ceil(props.containerHeight / props.itemHeight) + bufferSize,
+    props.items.length
   );
 
   visibleRange.value = { start, end };
 }
 
-// 排序方法
-function sort(column) {
-  if (sortBy.value === column) {
-    // 如果已经按这列排序，则切换方向
-    sortDirection.value = sortDirection.value === "asc" ? "desc" : "asc";
-  } else {
-    // 否则，按新列排序，默认升序
-    sortBy.value = column;
-    sortDirection.value = "asc";
-  }
-  // 排序后重置滚动到顶部
-  if (containerRef.value) {
-    containerRef.value.scrollTop = 0;
-  }
-  handleScroll();
-}
-
-// 获取排序图标
-function getSortIcon(column) {
-  if (sortBy.value !== column) return "⇅";
-  return sortDirection.value === "asc" ? "↑" : "↓";
+// 格式化时间
+function formatDuration(seconds: number | undefined): string {
+  if (!seconds) return '--';
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
 // 生命周期
@@ -99,24 +65,18 @@ onUnmounted(() => {
 <template>
   <div class="virtual-list-container">
     <div class="info">
-      <p>总共 {{ sortedUsers.length }} 条数据，显示范围: {{ visibleRange.start + 1 }} - {{ Math.min(visibleRange.end, sortedUsers.length) }}</p>
+      <p>总共 {{ items.length }} 条游戏记录，显示范围: {{ visibleRange.start + 1 }} - {{ Math.min(visibleRange.end, items.length) }}</p>
     </div>
 
-    <div class="sortable-table">
+    <div class="records-table">
       <!-- 固定表头 -->
       <div class="table-header">
-        <table>
-          <thead>
-            <tr>
-              <th @click="sort('id')">ID {{ getSortIcon("id") }}</th>
-              <th @click="sort('name')">姓名 {{ getSortIcon("name") }}</th>
-              <th @click="sort('age')">年龄 {{ getSortIcon("age") }}</th>
-              <th @click="sort('occupation')">
-                职业 {{ getSortIcon("occupation") }}
-              </th>
-            </tr>
-          </thead>
-        </table>
+        <div class="record-row header">
+          <div class="record-cell score">分数</div>
+          <div class="record-cell date">时间</div>
+          <div class="record-cell duration">用时</div>
+          <div class="record-cell result">结果</div>
+        </div>
       </div>
 
       <!-- 可滚动容器 -->
@@ -136,20 +96,21 @@ onUnmounted(() => {
             class="visible-rows"
             :style="{ transform: `translateY(${offsetY}px)` }"
           >
-            <table>
-              <tbody>
-                <tr
-                  v-for="user in visibleItems"
-                  :key="user.id"
-                  :style="{ height: itemHeight + 'px' }"
-                >
-                  <td>{{ user.id }}</td>
-                  <td>{{ user.name }}</td>
-                  <td>{{ user.age }}</td>
-                  <td>{{ user.occupation }}</td>
-                </tr>
-              </tbody>
-            </table>
+            <div
+              v-for="record in visibleItems"
+              :key="record.id"
+              class="record-row"
+              :style="{ height: itemHeight + 'px' }"
+            >
+              <div class="record-cell score">{{ record.score }}</div>
+              <div class="record-cell date">{{ record.date }}</div>
+              <div class="record-cell duration">{{ formatDuration(record.duration) }}</div>
+              <div class="record-cell result">
+                <span :class="record.won ? 'win' : 'lose'">
+                  {{ record.won ? '获胜' : '失败' }}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -158,38 +119,136 @@ onUnmounted(() => {
 </template>
 <style scoped>
 .virtual-list-container {
-  max-width: 700px;
-  margin: 0 auto;
-  font-family: sans-serif;
+  width: 100%;
+  font-family: var(--font-family);
 }
 
 .info {
-  margin-bottom: 10px;
-  padding: 8px;
-  background-color: #f0f8ff;
-  border-radius: 4px;
-  font-size: 14px;
-  color: #666;
+  margin-bottom: var(--space-md);
+  padding: var(--space-md);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(255, 255, 255, 0.8) 100%);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  font-weight: var(--font-weight-medium);
 }
 
-.sortable-table {
-  border: 1px solid #ddd;
-  border-radius: 4px;
+.records-table {
+  border-radius: var(--radius-lg);
   overflow: hidden;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(249, 246, 242, 0.95) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: var(--shadow-sm);
 }
 
 .table-header {
-  background-color: #f5f5f5;
+  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secondary-light) 100%);
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-primary-light);
 }
 
-.table-header table {
-  width: 100%;
-  border-collapse: collapse;
+.record-row {
+  display: flex;
+  border-bottom: 1px solid var(--color-secondary-light);
+  transition: all var(--transition-fast);
+}
+
+.record-row.header {
+  font-weight: var(--font-weight-bold);
+  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secondary-light) 100%);
+  color: var(--color-primary);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.record-row:last-child {
+  border-bottom: none;
+}
+
+.record-cell {
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border-right: 1px solid var(--color-secondary-light);
+  transition: all var(--transition-fast);
+}
+
+.record-row.header .record-cell {
+  border-right: 1px solid rgba(170, 154, 138, 0.3);
+  padding: var(--space-lg) var(--space-xl);
+}
+
+.record-cell:last-child {
+  border-right: none;
+}
+
+.record-cell.score {
+  flex: 1;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  font-size: var(--font-size-lg);
+}
+
+.record-cell.date {
+  flex: 3;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.record-cell.duration {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.record-cell.result {
+  flex: 1;
+}
+
+.record-cell.result .win {
+  color: var(--color-success);
+  font-weight: var(--font-weight-bold);
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(76, 175, 80, 0.05) 100%);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-md);
+  border: 2px solid rgba(76, 175, 80, 0.2);
+  font-size: var(--font-size-sm);
+  transition: all var(--transition-normal);
+}
+
+.record-cell.result .lose {
+  color: var(--color-error);
+  font-weight: var(--font-weight-bold);
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.1) 0%, rgba(244, 67, 54, 0.05) 100%);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-md);
+  border: 2px solid rgba(244, 67, 54, 0.2);
+  font-size: var(--font-size-sm);
+  transition: all var(--transition-normal);
+}
+
+.record-cell.result .win:hover {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(76, 175, 80, 0.1) 100%);
+  transform: scale(1.05);
+}
+
+.record-cell.result .lose:hover {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.2) 0%, rgba(244, 67, 54, 0.1) 100%);
+  transform: scale(1.05);
 }
 
 .table-body {
   overflow-y: auto;
   position: relative;
+  max-height: 500px;
 }
 
 .virtual-content {
@@ -203,30 +262,16 @@ onUnmounted(() => {
   right: 0;
 }
 
-.visible-rows table {
-  width: 100%;
-  border-collapse: collapse;
+.record-row:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(249, 246, 242, 0.8) 100%);
+  transform: translateX(4px);
+  box-shadow: var(--shadow-sm);
 }
 
-th,
-td {
-  padding: 10px;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
-}
-
-th {
-  background-color: #f5f5f5;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-th:hover {
-  background-color: #e5e5e5;
-}
-
-tr:hover {
-  background-color: #f9f9f9;
+.record-row.header:hover {
+  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secondary-light) 100%);
+  transform: none;
+  box-shadow: none;
 }
 
 /* 滚动条样式 */
@@ -235,15 +280,80 @@ tr:hover {
 }
 
 .table-body::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: rgba(187, 173, 160, 0.1);
+  border-radius: var(--radius-md);
 }
 
 .table-body::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
+  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secondary-light) 100%);
+  border-radius: var(--radius-md);
+  border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .table-body::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .record-cell {
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-sm);
+  }
+
+  .record-row.header .record-cell {
+    padding: var(--space-md) var(--space-lg);
+  }
+
+  .record-cell.score {
+    flex: 1.2;
+    font-size: var(--font-size-base);
+  }
+
+  .record-cell.date {
+    flex: 1.8;
+    font-size: var(--font-size-xs);
+  }
+
+  .record-cell.duration {
+    flex: 1.2;
+    font-size: var(--font-size-xs);
+  }
+
+  .record-cell.result {
+    flex: 1.2;
+  }
+}
+
+@media (max-width: 480px) {
+  .record-cell {
+    padding: var(--space-xs) var(--space-sm);
+  }
+
+  .record-row.header .record-cell {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .record-cell.score {
+    flex: 1.5;
+  }
+
+  .record-cell.date {
+    flex: 2;
+  }
+
+  .record-cell.duration {
+    flex: 1.5;
+  }
+
+  .record-cell.result {
+    flex: 1.5;
+  }
+
+  .record-cell.result .win,
+  .record-cell.result .lose {
+    padding: 2px 6px;
+    font-size: var(--font-size-xs);
+  }
 }
 </style>
