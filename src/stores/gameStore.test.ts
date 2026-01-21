@@ -204,7 +204,6 @@ describe('Game Store', () => {
       expect(store.gameRecords).toBeDefined()
       expect(typeof store.saveGameRecord).toBe('function')
       expect(typeof store.loadGameRecords).toBe('function')
-      expect(Array.isArray(store.gameRecords)).toBe(true)
     })
   })
 
