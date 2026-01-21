@@ -1,9 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createRouter, createWebHistory } from 'vue-router'
 import { createPinia, setActivePinia } from 'pinia'
 import Game from './Game.vue'
-import { useGameStore } from '../stores/gameStore'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -16,19 +15,16 @@ const router = createRouter({
 
 describe('Game View', () => {
   let wrapper: ReturnType<typeof mount>
-  let store: ReturnType<typeof useGameStore>
 
   beforeEach(async () => {
     setActivePinia(createPinia())
-    store = useGameStore()
-
-    // Mock store methods
-    vi.spyOn(store, 'initBoard')
-    vi.spyOn(store, 'restartGame')
 
     wrapper = mount(Game, {
       global: {
-        plugins: [router]
+        plugins: [router],
+        stubs: {
+          RouterLink: true
+        }
       }
     })
 

@@ -21,7 +21,10 @@ describe('Home View', () => {
 
     wrapper = mount(Home, {
       global: {
-        plugins: [router]
+        plugins: [router],
+        stubs: {
+          RouterLink: true
+        }
       }
     })
 

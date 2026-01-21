@@ -2,15 +2,12 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import Game2048 from './Game2048.vue'
 import { createPinia, setActivePinia } from 'pinia'
-import { useGameStore } from '../stores/gameStore'
 
 describe('Game2048 Component', () => {
   let wrapper: ReturnType<typeof mount>
-  let store: ReturnType<typeof useGameStore>
 
   beforeEach(() => {
     setActivePinia(createPinia())
-    store = useGameStore()
     wrapper = mount(Game2048)
   })
 

@@ -159,8 +159,8 @@ export const useGameStore = defineStore('game', () => {
     if (saved) {
       try {
         gameRecords.value = JSON.parse(saved)
-      } catch (error) {
-        console.error('Failed to load game records:', error)
+      } catch {
+        // 静默处理解析错误，使用默认值
         gameRecords.value = []
       }
     }

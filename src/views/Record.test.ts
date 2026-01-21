@@ -21,7 +21,10 @@ describe('Record View', () => {
 
     wrapper = mount(Record, {
       global: {
-        plugins: [router]
+        plugins: [router],
+        stubs: {
+          RouterLink: true
+        }
       }
     })
 
