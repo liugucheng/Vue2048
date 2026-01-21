@@ -2,6 +2,10 @@
 
 A modern implementation of the classic 2048 game built with Vue 3, TypeScript, and Vite.
 
+[![CI/CD Pipeline](https://github.com/your-username/vue2048/workflows/CI/CD%20Pipeline/badge.svg)](https://github.com/your-username/vue2048/actions)
+[![Deploy to GitHub Pages](https://github.com/your-username/vue2048/actions/workflows/deploy.yml/badge.svg)](https://github.com/your-username/vue2048/actions/workflows/deploy.yml)
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://your-username.github.io/vue2048)
+
 ## 🎮 Game Introduction
 
 2048 is a popular single-player sliding block puzzle game. The objective is to slide numbered tiles on a grid to combine them and create a tile with the number 2048.
@@ -31,6 +35,50 @@ A modern implementation of the classic 2048 game built with Vue 3, TypeScript, a
 - **Vite**: Next-generation frontend build tool
 - **CSS**: Modern styling with scoped components
 
+## 🚀 Deployment
+
+### GitHub Pages (Automated)
+
+This project includes automated deployment to GitHub Pages using GitHub Actions.
+
+#### Setup Instructions
+
+1. **Fork or Clone** this repository
+2. **Go to Repository Settings**
+   - Navigate to `Settings` → `Pages`
+   - Under `Source`, select `GitHub Actions`
+3. **Push to Main Branch**
+   - The deployment will automatically trigger on every push to the `master` or `main` branch
+4. **Access Your Site**
+   - Your site will be available at: `https://your-username.github.io/vue2048`
+
+#### Custom Domain (Optional)
+
+To use a custom domain:
+
+1. Go to Repository Settings → Pages
+2. In the `Custom domain` field, enter your domain
+3. Update the CNAME file in your repository root or modify the workflow file
+
+#### CI/CD Pipeline
+
+The GitHub Actions workflow includes:
+
+- **Code Quality Checks**: ESLint, TypeScript, Prettier
+- **Testing**: Unit tests with Vitest
+- **Build**: Production build optimization
+- **Deploy**: Automatic deployment to GitHub Pages
+
+### Manual Deployment
+
+```bash
+# Build the project
+npm run build
+
+# Deploy to any static hosting service
+# The built files will be in the 'dist' directory
+```
+
 ## 📦 Installation
 
 ```bash
@@ -45,6 +93,60 @@ npm run build
 
 # Preview production build
 npm run preview
+```
+
+## 🔧 Development Workflow
+
+### Code Quality Tools
+
+```bash
+# Run ESLint
+npm run lint
+
+# Fix ESLint issues automatically
+npm run lint:fix
+
+# Run TypeScript type checking
+npm run type-check
+
+# Run tests
+npm test
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run tests in UI mode
+npm run test:ui
+```
+
+### Git Workflow
+
+This project uses conventional commits and automated quality checks:
+
+```bash
+# Make your changes
+git add .
+
+# Commit with conventional format (this will run quality checks)
+git commit -m "feat: add new feature"
+
+# Push to trigger deployment
+git push origin master
+```
+
+#### Commit Message Format
+
+```
+type(scope): description
+
+Types:
+- feat: new feature
+- fix: bug fix
+- docs: documentation
+- style: code style changes
+- refactor: code refactoring
+- test: testing
+- chore: maintenance
 ```
 
 ## 🎲 Game Rules

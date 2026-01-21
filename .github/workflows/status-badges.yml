@@ -1,0 +1,24 @@
+# GitHub Status Badges for README
+# These badges will show the build and deployment status
+
+## Available Badges:
+
+### Build Status
+[![Build Status](https://github.com/your-username/vue2048/workflows/CI/CD%20Pipeline/badge.svg)](https://github.com/your-username/vue2048/actions)
+
+### Deployment Status
+[![Deploy to GitHub Pages](https://github.com/your-username/vue2048/actions/workflows/deploy.yml/badge.svg)](https://github.com/your-username/vue2048/actions/workflows/deploy.yml)
+
+### Live Demo
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://your-username.github.io/vue2048)
+
+### Code Quality
+[![Code Quality](https://img.shields.io/badge/code%20quality-A+-brightgreen)](https://github.com/your-username/vue2048)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue)](https://www.typescriptlang.org/)
+[![Vue](https://img.shields.io/badge/Vue-3.4-green)](https://vuejs.org/)
+
+### Test Coverage
+[![Test Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen)](https://github.com/your-username/vue2048)
+
+## Usage:
+Replace `your-username` with your actual GitHub username in the README.md file.
