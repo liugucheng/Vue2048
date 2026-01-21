@@ -470,16 +470,10 @@ const getTextColor = (value: number) => {
       <!-- 遍历棋盘的每一行 -->
       <div v-for="(row, i) in board" :key="i" class="row">
         <!-- 遍历行中的每个单元格 -->
-        <div
-          v-for="(cell, j) in row"
-          :key="j"
-          class="cell"
-          :class="{ 'has-value': cell }"
-          :style="{
-            backgroundColor: cell ? getCellColor(cell.value) : '#cdc1b4',
-            color: cell ? getTextColor(cell.value) : 'transparent',
-          }"
-        >
+        <div v-for="(cell, j) in row" :key="j" class="cell" :class="{ 'has-value': cell }" :style="{
+          backgroundColor: cell ? getCellColor(cell.value) : '#cdc1b4',
+          color: cell ? getTextColor(cell.value) : 'transparent',
+        }">
           <!-- 显示方块值，空方块显示为空 -->
           {{ cell?.value || "" }}
         </div>
@@ -631,6 +625,7 @@ const getTextColor = (value: number) => {
   0% {
     transform: scale(0);
   }
+
   100% {
     transform: scale(1);
   }
